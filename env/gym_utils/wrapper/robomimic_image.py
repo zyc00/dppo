@@ -8,8 +8,8 @@ Modified from https://github.com/real-stanford/diffusion_policy/blob/main/diffus
 """
 
 import numpy as np
-import gym
-from gym import spaces
+import gymnasium as gym
+from gymnasium import spaces
 import imageio
 
 

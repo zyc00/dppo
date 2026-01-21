@@ -104,15 +104,13 @@ class PreTrainAgent:
             pin_memory=True if self.dataset_train.device == "cpu" else False,
         )
         self.dataloader_val = None
-        if "train_split" in cfg.train and cfg.train.train_split < 1:
-            val_indices = self.dataset_train.set_train_val_split(cfg.train.train_split)
-            self.dataset_val = deepcopy(self.dataset_train)
-            self.dataset_val.set_indices(val_indices)
+        if "val_dataset" in cfg and cfg.val_dataset is not None:
+            self.dataset_val = hydra.utils.instantiate(cfg.val_dataset)
             self.dataloader_val = torch.utils.data.DataLoader(
                 self.dataset_val,
                 batch_size=self.batch_size,
                 num_workers=4 if self.dataset_val.device == "cpu" else 0,
-                shuffle=True,
+                shuffle=False,
                 pin_memory=True if self.dataset_val.device == "cpu" else False,
             )
         self.optimizer = torch.optim.AdamW(

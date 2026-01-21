@@ -51,7 +51,7 @@ class TrainDiffusionAgent(PreTrainAgent):
                 for batch_val in self.dataloader_val:
                     if self.dataset_val.device == "cpu":
                         batch_val = batch_to_device(batch_val)
-                    loss_val, infos_val = self.model.loss(*batch_val)
+                    loss_val = self.model.loss(*batch_val)
                     loss_val_epoch.append(loss_val.item())
                 self.model.train()
             loss_val = np.mean(loss_val_epoch) if len(loss_val_epoch) > 0 else None

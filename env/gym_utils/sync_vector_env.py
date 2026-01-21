@@ -3,10 +3,10 @@ from typing import List, Union, Optional
 import numpy as np
 from copy import deepcopy
 
-from gym import logger
-from gym.logger import warn
-from gym.vector.vector_env import VectorEnv
-from gym.vector.utils import concatenate, iterate, create_empty_array
+from gymnasium import logger
+from gymnasium.logger import warn
+from gymnasium.vector.vector_env import VectorEnv
+from gymnasium.vector.utils import concatenate, iterate, create_empty_array
 
 
 __all__ = ["SyncVectorEnv"]

@@ -6,9 +6,9 @@ Modified from https://github.com/real-stanford/diffusion_policy/blob/main/diffus
 TODO: allow cond_steps != img_cond_steps (should be implemented in training scripts, not here)
 """
 
-import gym
+import gymnasium
 from typing import Optional
-from gym import spaces
+from gymnasium import spaces
 import numpy as np
 from collections import defaultdict, deque
 
@@ -79,7 +79,7 @@ def stack_last_n_obs(all_obs, n_steps):
     return result
 
 
-class MultiStep(gym.Wrapper):
+class MultiStep(gymnasium.Wrapper):
 
     def __init__(
         self,

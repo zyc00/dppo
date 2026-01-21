@@ -121,7 +121,7 @@ class VisionDiffusionMLP(nn.Module):
         x = x.view(B, -1)
 
         # flatten history
-        state = cond["state"].view(B, -1)
+        state = cond["state"].contiguous().view(B, -1)
 
         # Take recent images --- sometimes we want to use fewer img_cond_steps than cond_steps (e.g., 1 image but 3 prio)
         rgb = cond["rgb"][:, -self.img_cond_steps :]

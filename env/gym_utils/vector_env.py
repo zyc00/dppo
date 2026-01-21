@@ -1,9 +1,9 @@
 from typing import Optional, Union, List
 
-import gym
-from gym.logger import warn, deprecation
-from gym.spaces import Tuple
-from gym.vector.utils.spaces import batch_space
+import gymnasium as gym
+from gymnasium.logger import warn, deprecation
+from gymnasium.spaces import Tuple
+from gymnasium.vector.utils.spaces import batch_space
 
 
 __all__ = ["VectorEnv"]

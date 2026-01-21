@@ -21,17 +21,17 @@ from enum import Enum
 from copy import deepcopy
 import time
 
-from gym import logger
+from gymnasium import logger
 
 # from gym.vector.vector_env import VectorEnv
 from .vector_env import VectorEnv
-from gym.error import (
+from gymnasium.error import (
     AlreadyPendingCallError,
     NoAsyncCallError,
     ClosedEnvironmentError,
     CustomSpaceError,
 )
-from gym.vector.utils import (
+from gymnasium.vector.utils import (
     create_shared_memory,
     create_empty_array,
     write_to_shared_memory,

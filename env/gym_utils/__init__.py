@@ -33,6 +33,15 @@ def make_async(
     render_offscreen=False,
     reward_shaping=False,
     shape_meta=None,
+    # below for mani_skill only
+    obs_mode="state",
+    control_mode="pd_joint_delta_pos",
+    config_path=None,  # path to env config yaml for custom envs
+    sim_backend="gpu",
+    reward_mode="sparse",
+    video_dir=None,  # path to save evaluation videos
+    # normalization wrapper
+    normalize_wrapper=None,  # dict with stats_path, normalize_state, unnormalize_action
     **kwargs,
 ):
     """Create a vectorized environment from multiple copies of an environment,
@@ -106,8 +115,92 @@ def make_async(
         )
         return env
 
+    if env_type == "mani_skill":
+        import gymnasium as gym
+        import mani_skill.envs
+        import importlib.util
+        from mani_skill.utils.wrappers import RecordEpisode
+        from mani_skill.vector.wrappers.gymnasium import ManiSkillVectorEnv
+
+        spec = importlib.util.spec_from_file_location(
+            "mani_skill_wrapper",
+            os.path.join(os.path.dirname(__file__), "wrapper", "mani_skill.py"),
+        )
+        mani_skill_wrapper = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mani_skill_wrapper)
+        FrameStackWithPartialReset = mani_skill_wrapper.FrameStackWithPartialReset
+        FlattenObservationWrapper = mani_skill_wrapper.FlattenObservationWrapper
+        ManiSkillVectorEnvWrapper = mani_skill_wrapper.ManiSkillVectorEnvWrapper
+        NormalizeWrapper = mani_skill_wrapper.NormalizeWrapper
+
+        # Build env kwargs
+        env_kwargs = dict(
+            num_envs=num_envs,
+            obs_mode=obs_mode,
+            control_mode=control_mode,
+            render_mode="rgb_array" if render or video_dir else None,
+            reward_mode=reward_mode,
+            sim_backend=sim_backend,
+        )
+        if max_episode_steps is not None:
+            env_kwargs["max_episode_steps"] = max_episode_steps
+
+        # Handle custom env with config_path
+        if config_path is not None:
+            from manirl.sim import envs as manirl_envs  # noqa: F401
+            from manirl.config.parser import parse_config
+
+            config, _ = parse_config(config_path)
+            env_kwargs["cfg"] = config
+            env_kwargs["reconfiguration_freq"] = 0
+
+        env_kwargs.update(kwargs)
+
+        env = gym.make(id, **env_kwargs)
+
+        # Add video recording wrapper if video_dir is provided
+        if video_dir is not None:
+            env = RecordEpisode(
+                env,
+                output_dir=video_dir,
+                save_trajectory=False,
+                save_video=render_offscreen,
+                info_on_video=True,
+                max_steps_per_video=max_episode_steps,
+            )
+
+        # Flatten observations (rgb/depth/state)
+        env = FlattenObservationWrapper(env, rgb=True, depth=False, state=True)
+
+        # Add frame stacking with partial reset and multi-step action support
+        env = FrameStackWithPartialReset(env, num_stack=obs_steps, n_action_steps=act_steps)
+
+        # Wrap with ManiSkillVectorEnv for proper episode handling
+        # ignore_terminations=True: auto-reset handled internally, obs after done is new episode's first obs
+        # Note: terminated is always False, truncated contains both terminated and truncated
+        # Use info["success"] to distinguish task completion from time limit for GAE
+        # record_metrics=True: track success rates and other metrics
+        env = ManiSkillVectorEnv(env, ignore_terminations=False, record_metrics=True)
+
+        # Wrap with our custom wrapper to add reset_arg and reset_one_arg methods
+        env = ManiSkillVectorEnvWrapper(env)
+
+        # Apply normalization wrapper if configured
+        if normalize_wrapper is not None and normalize_wrapper.get("enabled", True):
+            env = NormalizeWrapper(
+                env,
+                stats_path=normalize_wrapper.get("stats_path"),
+                stats=normalize_wrapper.get("stats"),
+                normalize_state=normalize_wrapper.get("normalize_state", True),
+                unnormalize_action=normalize_wrapper.get("unnormalize_action", True),
+                device=normalize_wrapper.get("device", "cuda:0"),
+            )
+
+        return env
+
     # avoid import error due incompatible gym versions
-    from gym import spaces
+    # from gym import spaces
+    from gymnasium import spaces
     from env.gym_utils.async_vector_env import AsyncVectorEnv
     from env.gym_utils.sync_vector_env import SyncVectorEnv
     from env.gym_utils.wrapper import wrapper_dict
