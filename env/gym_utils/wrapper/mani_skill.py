@@ -186,7 +186,7 @@ class FrameStackWithPartialReset(FrameStack):
                 reward[terminated] = 0.0
             terminated = terminated | terminated_step
             rewards.append(reward)
-            terminated_list.append(terminated)
+            terminated_list.append(terminated_step)
             truncated_list.append(truncated)
 
         # Aggregate rewards
