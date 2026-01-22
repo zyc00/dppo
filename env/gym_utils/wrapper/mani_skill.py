@@ -140,10 +140,12 @@ class FrameStackWithPartialReset(FrameStack):
         num_stack: int,
         n_action_steps: int = 1,
         reward_agg_method: str = "sum",
+        sparse_reward: bool = False,
     ):
         super().__init__(env, num_stack)
         self.n_action_steps = n_action_steps
         self.reward_agg_method = reward_agg_method
+        self.sparse_reward = sparse_reward
 
     @property
     def n_obs_steps(self):
@@ -173,12 +175,16 @@ class FrameStackWithPartialReset(FrameStack):
         rewards = []
         terminated_list = []
         truncated_list = []
+        terminated = torch.full((self.num_envs,), False, dtype=torch.bool, device=self.env.device)
 
         for step_idx in range(n_steps):
             # Get action for this step: (num_envs, action_dim)
             act = action[:, step_idx, :]
 
-            obs, reward, terminated, truncated, info = self._single_step(act)
+            obs, reward, terminated_step, truncated, info = self._single_step(act)
+            if self.sparse_reward:
+                reward[terminated] = 0.0
+            terminated = terminated | terminated_step
             rewards.append(reward)
             terminated_list.append(terminated)
             truncated_list.append(truncated)
