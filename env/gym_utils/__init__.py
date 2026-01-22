@@ -173,7 +173,7 @@ def make_async(
         env = FlattenObservationWrapper(env, rgb=True, depth=False, state=True)
 
         # Add frame stacking with partial reset and multi-step action support
-        env = FrameStackWithPartialReset(env, num_stack=obs_steps, n_action_steps=act_steps)
+        env = FrameStackWithPartialReset(env, num_stack=obs_steps, n_action_steps=act_steps, sparse_reward=sparse_reward)
 
         # Wrap with ManiSkillVectorEnv for proper episode handling
         # ignore_terminations=True: auto-reset handled internally, obs after done is new episode's first obs
