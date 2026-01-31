@@ -1,5 +1,5 @@
 """
-DPPO: Diffusion Policy Policy Optimization. 
+DPPO: Diffusion Policy Policy Optimization.
 
 K: number of denoising steps
 To: observation sequence length
@@ -127,8 +127,8 @@ class PPODiffusion(VPGDiffusion):
 
         # normalize advantages
         if self.norm_adv:
-            advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
-            # advantages = advantages / (advantages.std() + 1e-8)
+            # advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+            advantages = advantages / (advantages.std() + 1e-8)
 
         # Clip advantages by 5th and 95th percentile
         advantage_min = torch.quantile(advantages, self.clip_advantage_lower_quantile)
