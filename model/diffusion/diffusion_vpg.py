@@ -36,6 +36,7 @@ class VPGDiffusion(DiffusionModel):
         network_path=None,
         # modifying denoising schedule
         min_sampling_denoising_std=0.1,
+        max_sampling_denoising_std=1.0,
         min_logprob_denoising_std=0.1,
         # eta in DDIM
         eta=None,
@@ -59,6 +60,7 @@ class VPGDiffusion(DiffusionModel):
 
         # Minimum std used in denoising process when sampling action - helps exploration
         self.min_sampling_denoising_std = min_sampling_denoising_std
+        self.max_sampling_denoising_std = max_sampling_denoising_std
 
         # Minimum std used in calculating denoising logprobs - for stability
         self.min_logprob_denoising_std = min_logprob_denoising_std
@@ -134,6 +136,12 @@ class VPGDiffusion(DiffusionModel):
             return self.min_sampling_denoising_std
         else:
             return self.min_sampling_denoising_std()
+
+    def get_max_sampling_denoising_std(self):
+        if type(self.max_sampling_denoising_std) is float:
+            return self.max_sampling_denoising_std
+        else:
+            return self.max_sampling_denoising_std()
 
     # override
     def p_mean_var(
@@ -253,6 +261,7 @@ class VPGDiffusion(DiffusionModel):
 
         # Get updated minimum sampling denoising std
         min_sampling_denoising_std = self.get_min_sampling_denoising_std()
+        max_sampling_denoising_std = self.get_max_sampling_denoising_std()
 
         # Loop
         x = torch.randn((B, self.horizon_steps, self.action_dim), device=device)
@@ -283,14 +292,14 @@ class VPGDiffusion(DiffusionModel):
                 if deterministic:
                     std = torch.zeros_like(std)
                 else:
-                    std = torch.clip(std, min=min_sampling_denoising_std)
+                    std = torch.clip(std, min=min_sampling_denoising_std, max=max_sampling_denoising_std)
             else:
                 if deterministic and t == 0:
                     std = torch.zeros_like(std)
                 elif deterministic:  # still keep the original noise
                     std = torch.clip(std, min=1e-3)
                 else:  # use higher minimum noise
-                    std = torch.clip(std, min=min_sampling_denoising_std)
+                    std = torch.clip(std, min=min_sampling_denoising_std, max=max_sampling_denoising_std)
             noise = torch.randn_like(x).clamp_(
                 -self.randn_clip_value, self.randn_clip_value
             )
